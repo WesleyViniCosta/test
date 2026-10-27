@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EAN por peso</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 420px;
+  margin: 30px auto;
+  padding: 16px;
+  background: #222;
+  color: white;
+}
+input, button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0 18px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+input { background: #333; color: white; border: 1px solid #888; }
+button { background: #8246ee; color: white; border: 0; }
+#resultado { font-size: 25px; font-weight: bold; overflow-wrap: anywhere; }
+</style>
+
+<h2>EAN-13 Generator</h2>
+
+<label>Código genérico</label>
+<input id="codigo" inputmode="numeric"
+placeholder="Ex: 2801359000004">
+
+<label>Peso em kg</label>
+<input id="peso" inputmode="decimal"
+placeholder="Ex: 9,930">
+
+<p>EAN-13 calculado:</p>
+<div id="resultado">—</div>
+<p id="detalhe"></p>
+<button onclick="copiar()">Copiar código</button>
+
+<script>
+function calcular() {
+  const codigo = document.getElementById("codigo").value.replace(/\D/g, "");
+  const pesoTexto = document.getElementById("peso").value.trim().replace(",", ".");
+  const resultado = document.getElementById("resultado");
+  const detalhe = document.getElementById("detalhe");
+
+  resultado.textContent = "—";
+  detalhe.textContent = "";
+
+  if (codigo.length < 7 || pesoTexto === "") return;
+
+  const kg = Number(pesoTexto);
+  if (!Number.isFinite(kg) || kg <= 0) return;
+
+  const gramas = Math.round(kg * 1000);
+  if (Math.abs(kg * 1000 - gramas) > 0.00001 || gramas > 99999) {
+    detalhe.textContent = "Peso inválido.";
+    return;
+  }
+
+  const base = codigo.slice(0, 7) +
+    String(gramas).padStart(5, "0");
+
+  let soma = 0;
+  for (let i = 0; i < 12; i++) {
+    soma += Number(base[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+
+  const verificador = (10 - soma % 10) % 10;
+  resultado.textContent = base + verificador;
+  detalhe.textContent = "Artigo: " + base.slice(0, 7) +
+    " | Peso: " + (gramas / 1000).toFixed(3) + " kg";
+}
+
+async function copiar() {
+  const texto = document.getElementById("resultado").textContent;
+  if (!/^\d{13}$/.test(texto)) return;
+
+  try {
+    await navigator.clipboard.writeText(texto);
+    alert("Código copiado!");
+  } catch {
+    alert("Seleciona o código e copia manualmente.");
+  }
+}
+
+document.getElementById("codigo").addEventListener("input", calcular);
+document.getElementById("peso").addEventListener("input", calcular);
+</script>
+</html>
